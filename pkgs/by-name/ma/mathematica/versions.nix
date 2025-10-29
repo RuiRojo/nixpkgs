@@ -12,7 +12,7 @@ let
       version = "14.3.0";
       lang = "en";
       language = "English";
-      sha256 = "";
+      sha256 = "sha256-FvcXXijGOcuRA1UFyVvPIyR1YaK/qrkMpLxf+mz+A/c=";
       installer = "Wolfram_14.3.0_LIN_Bndl.sh";
     }
      {
