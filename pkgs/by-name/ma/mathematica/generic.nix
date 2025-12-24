@@ -189,6 +189,13 @@ stdenv.mkDerivation {
     substituteInPlace $INSTALLER \
       --replace "exec ./MathInstaller -noprompt" "exec ./MathInstaller -noprompt -targetdir=\"$out/libexec/Mathematica\""
 
+    # Ensure bundled doc installer is runnable under Nix
+    bundleInstaller="$TMPDIR/Unix/.bundle/Unix/Installer/MathInstaller"
+    if [ -f "$bundleInstaller" ]; then
+      chmod +x "$bundleInstaller"
+      patchShebangs "$bundleInstaller"
+    fi
+
     # Remove PATH restriction, root and avahi daemon checks, and hostname call
     sed -i '
       s/^\s*PATH=/# &/
