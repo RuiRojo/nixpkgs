@@ -184,10 +184,11 @@ stdenv.mkDerivation {
     fi
     # Patch Installer's shebangs and udev rules dir
     patchShebangs $INSTALLER
+    DOC_TMPDIR="$TMPDIR/mathematica-docs"
     substituteInPlace $INSTALLER \
       --replace /etc/udev/rules.d $out/lib/udev/rules.d
     substituteInPlace $INSTALLER \
-      --replace "exec ./MathInstaller -noprompt" "exec ./MathInstaller -noprompt -overwrite=y -targetdir=\"$out/libexec/Mathematica\""
+      --replace "exec ./MathInstaller -noprompt" "exec ./MathInstaller -noprompt -createdir=y -overwrite=y -targetdir=\"$DOC_TMPDIR\""
 
     # Ensure bundled doc installer is runnable under Nix
     bundleInstaller="$TMPDIR/Unix/.bundle/Unix/Installer/MathInstaller"
@@ -207,7 +208,7 @@ stdenv.mkDerivation {
     ' $INSTALLER
 
     # NOTE: some files placed under HOME may be useful
-    XDG_DATA_HOME="$out/share" HOME="$TMPDIR/home" vernierLink=y \
+    XDG_DATA_HOME="$out/share" HOME="$TMPDIR/home" vernierLink=y DOC_TMPDIR="$DOC_TMPDIR" \
       ./$INSTALLER -execdir="$out/bin" -targetdir="$out/libexec/Mathematica" -auto -verbose -createdir=y
 
     # Check if Installer produced any errors
@@ -216,6 +217,17 @@ stdenv.mkDerivation {
       echo "Installation errors:"
       cat "$errLog"
       return 1
+    fi
+
+    if [ -f "$DOC_TMPDIR/InstallErrors" ]; then
+      echo "Documentation installation errors:"
+      cat "$DOC_TMPDIR/InstallErrors"
+      return 1
+    fi
+
+    if [ -d "$DOC_TMPDIR/Documentation" ]; then
+      rm -rf "$out/libexec/Mathematica/Documentation"
+      cp -a "$DOC_TMPDIR/Documentation" "$out/libexec/Mathematica/Documentation"
     fi
 
     runHook postInstall
