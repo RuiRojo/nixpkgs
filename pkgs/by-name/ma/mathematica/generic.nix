@@ -186,13 +186,14 @@ stdenv.mkDerivation {
     patchShebangs $INSTALLER
     substituteInPlace $INSTALLER \
       --replace /etc/udev/rules.d $out/lib/udev/rules.d
+    substituteInPlace $INSTALLER \
+      --replace "exec ./MathInstaller -noprompt" "exec ./MathInstaller -noprompt -targetdir=\"$out/libexec/Mathematica\""
 
     # Remove PATH restriction, root and avahi daemon checks, and hostname call
     sed -i '
       s/^\s*PATH=/# &/
       s/isRoot="false"/# &/
       s/^\s*checkAvahiDaemon$/:/
-      s/^\s*installBundledInstall$/:/
       s/`hostname`/""/
     ' $INSTALLER
 
