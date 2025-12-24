@@ -213,7 +213,7 @@ stdenv.mkDerivation {
       rm -rf "$out/libexec/Mathematica/Documentation"
       shopt -s nullglob
       for comp in Documentation Messages Usage Paclets Manifest; do
-        for tarball in "$docBundleDir/${comp}.M-LINUX-Documentation."*/contents.tar.xz; do
+        for tarball in "$docBundleDir/''${comp}.M-LINUX-Documentation."*/contents.tar.xz; do
           tar -xJf "$tarball" -C "$out/libexec/Mathematica"
         done
       done
