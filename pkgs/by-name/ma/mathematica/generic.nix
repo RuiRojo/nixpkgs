@@ -184,31 +184,20 @@ stdenv.mkDerivation {
     fi
     # Patch Installer's shebangs and udev rules dir
     patchShebangs $INSTALLER
-    DOC_TMPDIR="$TMPDIR/mathematica-docs"
     substituteInPlace $INSTALLER \
       --replace /etc/udev/rules.d $out/lib/udev/rules.d
-    substituteInPlace $INSTALLER \
-      --replace "exec ./MathInstaller -noprompt" "exec ./MathInstaller -noprompt -createdir=y -overwrite=y -targetdir=\"$DOC_TMPDIR\""
-
-    # Ensure bundled doc installer is runnable under Nix
-    bundleInstaller="$TMPDIR/Unix/.bundle/Unix/Installer/MathInstaller"
-    if [ -f "$bundleInstaller" ]; then
-      chmod +x "$bundleInstaller"
-      patchShebangs "$bundleInstaller"
-      substituteInPlace "$bundleInstaller" \
-        --replace 'HOST=`hostname`' 'HOST=""'
-    fi
 
     # Remove PATH restriction, root and avahi daemon checks, and hostname call
     sed -i '
       s/^\s*PATH=/# &/
       s/isRoot="false"/# &/
       s/^\s*checkAvahiDaemon$/:/
+      s/^\s*installBundledInstall$/:/
       s/`hostname`/""/
     ' $INSTALLER
 
     # NOTE: some files placed under HOME may be useful
-    XDG_DATA_HOME="$out/share" HOME="$TMPDIR/home" vernierLink=y DOC_TMPDIR="$DOC_TMPDIR" \
+    XDG_DATA_HOME="$out/share" HOME="$TMPDIR/home" vernierLink=y \
       ./$INSTALLER -execdir="$out/bin" -targetdir="$out/libexec/Mathematica" -auto -verbose -createdir=y
 
     # Check if Installer produced any errors
@@ -219,15 +208,16 @@ stdenv.mkDerivation {
       return 1
     fi
 
-    if [ -f "$DOC_TMPDIR/InstallErrors" ]; then
-      echo "Documentation installation errors:"
-      cat "$DOC_TMPDIR/InstallErrors"
-      return 1
-    fi
-
-    if [ -d "$DOC_TMPDIR/Documentation" ]; then
+    docBundleDir="$TMPDIR/Unix/.bundle/Unix/Files"
+    if [ -d "$docBundleDir" ]; then
       rm -rf "$out/libexec/Mathematica/Documentation"
-      cp -a "$DOC_TMPDIR/Documentation" "$out/libexec/Mathematica/Documentation"
+      shopt -s nullglob
+      for comp in Documentation Messages Usage Paclets Manifest; do
+        for tarball in "$docBundleDir/${comp}.M-LINUX-Documentation."*/contents.tar.xz; do
+          tar -xJf "$tarball" -C "$out/libexec/Mathematica"
+        done
+      done
+      shopt -u nullglob
     fi
 
     runHook postInstall
